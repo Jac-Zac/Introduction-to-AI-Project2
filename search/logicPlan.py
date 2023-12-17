@@ -25,8 +25,16 @@ from typing import Any, Callable, Dict, Generator, List, Tuple
 import game
 import logic
 import util
-from logic import (Expr, PropSymbolExpr, conjoin, disjoin, parseExpr, pl_true,
-                   pycoSAT, to_cnf)
+from logic import (
+    Expr,
+    PropSymbolExpr,
+    conjoin,
+    disjoin,
+    parseExpr,
+    pl_true,
+    pycoSAT,
+    to_cnf,
+)
 
 pacman_str = "P"
 food_str = "FOOD"
@@ -121,10 +129,11 @@ def sentence3() -> Expr:
     killed_0 = PropSymbolExpr("PacmanKilled_0")
 
     # PropSymbolExpr constructor,
+    c1 = alive_1 % ((alive_0 & ~killed_0) | (~alive_0 & born_0))
+    c2 = ~(alive_0 & born_0)
+    c3 = born_0
 
-    return alive_1 % (alive_0 & ~(killed_0 | born_0))
-
-    # util.raiseNotDefined()
+    return conjoin(c1, c2, c3)
     "*** END YOUR CODE HERE ***"
 
 
@@ -142,15 +151,22 @@ def findModelUnderstandingCheck() -> Dict[Expr, bool]:
     """
     a = Expr("A")
     "*** BEGIN YOUR CODE HERE ***"
-    print("a.__dict__ is:", a.__dict__)  # might be helpful for getting ideas
-    util.raiseNotDefined()
+    # return a.__dict__["op"].lower()
+
+    # do not know what the want
+    return {a.__dict__["op"].lower(): True}
+    # util.raiseNotDefined()
     "*** END YOUR CODE HERE ***"
 
 
 def entails(premise: Expr, conclusion: Expr) -> bool:
     """Returns True if the premise entails the conclusion and False otherwise."""
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    model = findModel(premise % conclusion)
+    return model
+    # if model == False:
+    # return Flase
+    # util.raiseNotDefined()
     "*** END YOUR CODE HERE ***"
 
 
@@ -159,7 +175,9 @@ def plTrueInverse(assignments: Dict[Expr, bool], inverse_statement: Expr) -> boo
     pl_true may be useful here; see logic.py for its description.
     """
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    model = findModel(assignments)
+
+    return ~pl_true(assignments, model)
     "*** END YOUR CODE HERE ***"
 
 
