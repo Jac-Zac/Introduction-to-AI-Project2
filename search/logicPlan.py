@@ -25,8 +25,16 @@ from typing import Any, Callable, Dict, Generator, List, Tuple
 import game
 import logic
 import util
-from logic import (Expr, PropSymbolExpr, conjoin, disjoin, parseExpr, pl_true,
-                   pycoSAT, to_cnf)
+from logic import (
+    Expr,
+    PropSymbolExpr,
+    conjoin,
+    disjoin,
+    parseExpr,
+    pl_true,
+    pycoSAT,
+    to_cnf,
+)
 
 pacman_str = "P"
 food_str = "FOOD"
@@ -198,7 +206,7 @@ def atLeastOne(literals: List[Expr]) -> Expr:
     "*** BEGIN YOUR CODE HERE ***"
 
     # in cnf we get (First or second or third ...)
-    return to_cnf(disjoin(literals))
+    return disjoin(literals)
     "*** END YOUR CODE HERE ***"
 
 
@@ -213,13 +221,14 @@ def atMostOne(literals: List[Expr]) -> Expr:
     # Combination of two
     result = conjoin(
         list(
-            (~(first & second) & first | second)
+            # TODO fix this
+            # why doesn't it work I do not now
+            # conjoin(~(first & second), (first | second))
+            ~first | ~second
             for first, second in itertools.combinations(literals, 2)
         )
     )
-
-    return to_cnf(result)
-
+    return result
     "*** END YOUR CODE HERE ***"
 
 
@@ -230,7 +239,8 @@ def exactlyOne(literals: List[Expr]) -> Expr:
     the expressions in the list is true.
     """
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # putting everything together with (&)
+    return conjoin(atLeastOne(literals), atMostOne(literals))
     "*** END YOUR CODE HERE ***"
 
 
