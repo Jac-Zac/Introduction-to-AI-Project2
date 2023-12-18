@@ -25,16 +25,8 @@ from typing import Any, Callable, Dict, Generator, List, Tuple
 import game
 import logic
 import util
-from logic import (
-    Expr,
-    PropSymbolExpr,
-    conjoin,
-    disjoin,
-    parseExpr,
-    pl_true,
-    pycoSAT,
-    to_cnf,
-)
+from logic import (Expr, PropSymbolExpr, conjoin, disjoin, parseExpr, pl_true,
+                   pycoSAT, to_cnf)
 
 pacman_str = "P"
 food_str = "FOOD"
@@ -127,7 +119,6 @@ def sentence3() -> Expr:
     alive_1 = PropSymbolExpr("PacmanAlive_1")
     born_0 = PropSymbolExpr("PacmanBorn_0")
     killed_0 = PropSymbolExpr("PacmanKilled_0")
-
     # PropSymbolExpr constructor,
     c1 = alive_1 % ((alive_0 & ~killed_0) | (~alive_0 & born_0))
     c2 = ~(alive_0 & born_0)
@@ -151,22 +142,23 @@ def findModelUnderstandingCheck() -> Dict[Expr, bool]:
     """
     a = Expr("A")
     "*** BEGIN YOUR CODE HERE ***"
-    # return a.__dict__["op"].lower()
-
-    # do not know what the want
-    return {a.__dict__["op"].lower(): True}
-    # util.raiseNotDefined()
+    # make it lowercase
+    a.op = a.op.lower()
+    return {a: True}
     "*** END YOUR CODE HERE ***"
 
 
 def entails(premise: Expr, conclusion: Expr) -> bool:
     """Returns True if the premise entails the conclusion and False otherwise."""
     "*** BEGIN YOUR CODE HERE ***"
-    model = findModel(premise % conclusion)
-    return model
-    # if model == False:
-    # return Flase
-    # util.raiseNotDefined()
+    # Iff A => B in all works thus I test for the opposite
+    # ~(A => B) # ~(~A | B) # ~A & B
+    # if findModel(premise & ~conclusion) == False:
+    if findModel(premise & ~conclusion) == False:
+        # Since I'm studying the opposite
+        return True
+
+    return False
     "*** END YOUR CODE HERE ***"
 
 
@@ -175,9 +167,8 @@ def plTrueInverse(assignments: Dict[Expr, bool], inverse_statement: Expr) -> boo
     pl_true may be useful here; see logic.py for its description.
     """
     "*** BEGIN YOUR CODE HERE ***"
-    model = findModel(assignments)
+    return pl_true(~inverse_statement, assignments)
 
-    return ~pl_true(assignments, model)
     "*** END YOUR CODE HERE ***"
 
 
@@ -205,7 +196,9 @@ def atLeastOne(literals: List[Expr]) -> Expr:
     True
     """
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+
+    # in cnf we get (First or second or third ...)
+    return to_cnf(disjoin(literals))
     "*** END YOUR CODE HERE ***"
 
 
@@ -217,7 +210,16 @@ def atMostOne(literals: List[Expr]) -> Expr:
     itertools.combinations may be useful here.
     """
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # Combination of two
+    result = conjoin(
+        list(
+            (~(first & second) & first | second)
+            for first, second in itertools.combinations(literals, 2)
+        )
+    )
+
+    return to_cnf(result)
+
     "*** END YOUR CODE HERE ***"
 
 
