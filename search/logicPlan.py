@@ -285,7 +285,12 @@ def pacmanSuccessorAxiomSingle(
         return None
 
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+
+    # Inspiration from SLAMSuccessorAxiomSingle
+    # Pacman now is there because of one of the possible causes
+    return conjoin(
+        PropSymbolExpr(pacman_str, x, y, time=now) % disjoin(possible_causes)
+    )
     "*** END YOUR CODE HERE ***"
 
 
@@ -393,9 +398,37 @@ def pacphysicsAxioms(
             locations on this time step. Consider edge cases. Don't call if None.
     """
     pacphysics_sentences = []
-
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+
+    # # If a wall is at (x, y) --> Pacman is not at (x, y)
+    for x, y in all_coords:
+        pacphysics_sentences.append(
+            PropSymbolExpr(wall_str, x, y) >> ~PropSymbolExpr(pacman_str, x, y, time=t)
+        )
+
+    # Pacman is at exactly one of the squares at timestep t.
+    pacphysics_sentences.append(
+        exactlyOne(
+            [PropSymbolExpr(pacman_str, x, y, time=t) for x, y in non_outer_wall_coords]
+        )
+    )
+
+    # Pacman takes exactly one action at timestep t.
+    pacphysics_sentences.append(
+        exactlyOne([PropSymbolExpr(direction, time=t) for direction in DIRECTIONS])
+    )
+
+    # Results of calling sensorModel(...), unless None.
+    if sensorModel:
+        pacphysics_sentences.append(sensorModel(t, non_outer_wall_coords))
+
+    # Results of calling successorAxioms(...), describing how Pacman can end in various locations on this time step. Consider edge cases. Don't call if None.
+    if successorAxioms and walls_grid and t:
+        # if successorAxioms:
+        pacphysics_sentences.append(
+            successorAxioms(t, walls_grid, non_outer_wall_coords)
+        )
+
     "*** END YOUR CODE HERE ***"
 
     return conjoin(pacphysics_sentences)
@@ -416,7 +449,7 @@ def checkLocationSatisfiability(
         - the successorAxioms should be allLegalSuccessorAxioms where needed
     Return:
         - a model where Pacman is at (x1, y1) at time t = 1
-        - a model where Pacman is not at (x1, y1) at time t = 1
+        - a model where Pacman is not at (x1, y) at time t = 1
     """
     walls_grid = problem.walls
     walls_list = walls_grid.asList()
@@ -432,12 +465,32 @@ def checkLocationSatisfiability(
     x0, y0 = x0_y0
     x1, y1 = x1_y1
 
-    # We know which coords are walls:
+    # We know which curds are walls:
     map_sent = [PropSymbolExpr(wall_str, x, y) for x, y in walls_list]
     KB.append(conjoin(map_sent))
 
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    for i in range(2):
+        KB.append(
+            pacphysicsAxioms(
+                i,
+                all_coords,
+                non_outer_wall_coords,
+                walls_grid,
+                None,
+                allLegalSuccessorAxioms,
+            )
+        )
+
+    KB.append(logic.PropSymbolExpr(pacman_str, x0, y0, time=0))
+    KB.append(logic.PropSymbolExpr(action0, time=0))
+    KB.append(logic.PropSymbolExpr(action1, time=1))
+
+    # a model where Pacman is, and is not, at (x1, y1) at time t = 1
+    return (
+        findModel(conjoin(KB) & PropSymbolExpr(pacman_str, x1, y1, time=1)),
+        findModel(conjoin(KB) & ~PropSymbolExpr(pacman_str, x1, y1, time=1)),
+    )
     "*** END YOUR CODE HERE ***"
 
 
