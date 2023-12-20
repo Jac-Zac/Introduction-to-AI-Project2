@@ -25,16 +25,8 @@ from typing import Any, Callable, Dict, Generator, List, Tuple
 import game
 import logic
 import util
-from logic import (
-    Expr,
-    PropSymbolExpr,
-    conjoin,
-    disjoin,
-    parseExpr,
-    pl_true,
-    pycoSAT,
-    to_cnf,
-)
+from logic import (Expr, PropSymbolExpr, conjoin, disjoin, parseExpr, pl_true,
+                   pycoSAT, to_cnf)
 
 pacman_str = "P"
 food_str = "FOOD"
@@ -423,6 +415,7 @@ def pacphysicsAxioms(
         pacphysics_sentences.append(sensorModel(t, non_outer_wall_coords))
 
     # Results of calling successorAxioms(...), describing how Pacman can end in various locations on this time step. Consider edge cases. Don't call if None.
+    # Wall grid should not be none and the same is true for the time
     if successorAxioms and walls_grid and t:
         # if successorAxioms:
         pacphysics_sentences.append(
@@ -449,7 +442,7 @@ def checkLocationSatisfiability(
         - the successorAxioms should be allLegalSuccessorAxioms where needed
     Return:
         - a model where Pacman is at (x1, y1) at time t = 1
-        - a model where Pacman is not at (x1, y) at time t = 1
+        - a model where Pacman is not at (x1, y1) at time t = 1
     """
     walls_grid = problem.walls
     walls_list = walls_grid.asList()
@@ -470,6 +463,7 @@ def checkLocationSatisfiability(
     KB.append(conjoin(map_sent))
 
     "*** BEGIN YOUR CODE HERE ***"
+    # Add the required information for the time steps
     for i in range(2):
         KB.append(
             pacphysicsAxioms(
@@ -482,6 +476,7 @@ def checkLocationSatisfiability(
             )
         )
 
+    # add starting position and the actions int the knowedlge base
     KB.append(logic.PropSymbolExpr(pacman_str, x0, y0, time=0))
     KB.append(logic.PropSymbolExpr(action0, time=0))
     KB.append(logic.PropSymbolExpr(action1, time=1))
@@ -518,6 +513,24 @@ def positionLogicPlan(problem) -> List:
     KB = []
 
     "*** BEGIN YOUR CODE HERE ***"
+    # Pseudocode:
+    #     You will need to code up the following sentences for your knowledge base, in the following pseudocode form:
+    #
+    #     Add to KB: Initial knowledge: Pacman's initial location at timestep 0
+    #     for t in range(50) [Autograder will not test on layouts requiring ≥  50 timesteps]
+    #
+    #     Print time step; this is to see that the code is running and how far it is.
+    #     Add to KB: Initial knowledge: Pacman can only be at exactlyOne of the locations in non_wall_coords at timestep t.
+    #     This is similar to pacphysicsAxioms, but don't use that method since we are using non_wall_coors when generating the
+    #     list of possible locations in the first place (and walls_grid later).
+
+    #     Is there a satisfying assignment for the variables given the knowledge base so far? Use findModel and pass in the Goal Assertion and KB.
+    #         If there is, return a sequence of actions from start to goal using extractActionSequence.
+    #         Here, Goal Assertion is the expression asserting that Pacman is at the goal at timestep t.
+
+    #     Add to KB: Pacman takes exactly one action per timestep.
+    #     Add to KB: Transition Model sentences: call pacmanSuccessorAxiomSingle(...) for all possible pacman positions in non_wall_coords.
+
     util.raiseNotDefined()
     "*** END YOUR CODE HERE ***"
 
