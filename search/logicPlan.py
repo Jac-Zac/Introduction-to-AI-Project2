@@ -25,8 +25,16 @@ from typing import Any, Callable, Dict, Generator, List, Tuple
 import game
 import logic
 import util
-from logic import (Expr, PropSymbolExpr, conjoin, disjoin, parseExpr, pl_true,
-                   pycoSAT, to_cnf)
+from logic import (
+    Expr,
+    PropSymbolExpr,
+    conjoin,
+    disjoin,
+    parseExpr,
+    pl_true,
+    pycoSAT,
+    to_cnf,
+)
 
 pacman_str = "P"
 food_str = "FOOD"
@@ -782,25 +790,22 @@ def mapping(problem, agent) -> Generator:
     KB.append(conjoin(outer_wall_sent))
 
     "*** BEGIN YOUR CODE HERE ***"
-    # TODO >>>>>>
-    # It willl be similar to this
+    # Get initial location (pac_x_0, pac_y_0) of Pacman, and add this to KB
+    KB.append(PropSymbolExpr(pacman_str, pac_x_0, pac_y_0, time=0))
 
-    for x, y in all_coords:
-        if (x, y) not in walls_list:
-            KB.append(~PropSymbolExpr(wall_str, x, y))
-        else:
-            KB.append(PropSymbolExpr(wall_str, x, y))
+    # Add whether there is a wall at that location
+    KB.append(~PropSymbolExpr(wall_str, pac_x_0, pac_y_0))
 
     for t in range(agent.num_timesteps):
-        helper1(agent, KB, t, all_coords, non_outer_wall_coords, walls_grid)
+        helper1(agent, KB, t, all_coords, non_outer_wall_coords, known_map)
 
-        # Find possible pacman locations with updated KB
-        possible_locations = list()
+        # Find provable wall locations with updated KB
         for wall in non_outer_wall_coords:
-            helper2(KB, t, *wall, possible_locations)
+            helper3(KB, *wall, known_map)
 
         # Call agent.moveToNextState(action_t) on the current agent action at timestep t
         agent.moveToNextState(agent.actions[t])
+
         "*** END YOUR CODE HERE ***"
         yield known_map
 
