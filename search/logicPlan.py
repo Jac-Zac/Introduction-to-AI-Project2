@@ -636,6 +636,8 @@ def helper1(agent, KB, t, all_coords, non_outer_wall_coords, map):
     Add pacphysics, action, and percept information to KB
     """
 
+    # Add to KB: pacphysics_axioms. Use sensorAxioms and allLegalSuccessorAxioms for localization and mapping,
+    # and SLAMSensorAxioms and SLAMSuccessorAxioms for SLAM only
     KB.append(
         pacphysicsAxioms(
             t,
@@ -647,48 +649,54 @@ def helper1(agent, KB, t, all_coords, non_outer_wall_coords, map):
         )
     )
 
+    # Add to KB: Pacman takes action prescribed by agent.actions[t]
     KB.append(PropSymbolExpr(agent.actions[t], time=t))
 
-    KB.append(fourBitPerceptRules(t, agent.getPercept()))
+    # if SLAM:
+    # KB.append(numAdjWallsPerceptRules(t, agent.getPercept()))
+    # else:
+    # Get the percepts by calling agent.getPercepts() and pass the percepts to fourBitPerceptRules(...) for localization and mapping, or numAdjWallsPerceptRules(...) for SLAM.
+    KB.append(fourBitPerceptRules(t, agent.getPercepts()))
 
 
-def helper2(KB, t, coord, possible_location):
+def helper2(KB, t, x, y, possible_location):
     """
     Find possible pacman locations with updated KB
     """
+    pacman_location = PropSymbolExpr(pacman_str, x, y, time=t)
 
     # Conjunction of the knowledge base and Pacman locations
-    result = conjoin(*KB, PropSymbolExpr(pacman_str, coord[0], coord[1], time=t))
+    result = conjoin(*KB, pacman_location)
 
     # If there is a satisfying
     if findModel(result):
-        possible_location.append(*coord)
+        possible_location.append((x, y))
 
-    # Think about it
+    # Add to KB: (x, y) locations where Pacman is provably at, at time t
+    elif entails(conjoin(KB), pacman_location):
+        KB.append(pacman_location)
+
+    # Add to KB: (x, y) locations where Pacman is provably not at, at time t
+    else:
+        KB.append(~pacman_location)
 
 
-def helper2(KB, t, non_outer_wall_coords):
+def helper3(KB, x, y, map):
     """
-    Find possible pacman locations with updated KB
+    Find provable wall locations with updated KB
     """
 
-    for x, y in non_outer_wall_coords:
-        # use entail to see if a wall is not there
-        # = position
+    wall_exists = PropSymbolExpr(wall_str, x, y)
 
-        # Add to KB and update known_map: (x, y) locations where there is provably a wall.
-        KB.append(~position)
+    # Add to KB and update known_map: (x, y) locations where there is provably a wall.
+    if entails(conjoin(KB), wall_exists):
+        KB.append(wall_exists)
+        map[x][y] = 1
 
-        # Add to KB and update known_map: (x, y) locations where there is provably not a wall.
-
-    # Conjunction of the knowledge base and Pacman locations
-    result = conjoin(*KB, PropSymbolExpr(pacman_str, coord[0], coord[1], time=t))
-
-    # If there is a satisfying
-    if findModel(result):
-        possible_location.append(*coord)
-
-    # Think about it
+    # Add to KB and update known_map: (x, y) locations where there is provably not a wall.
+    elif entails(conjoin(KB), ~wall_exists):
+        KB.append(~wall_exists)
+        map[x][y] = 0
 
 
 # ______________________________________________________________________________
@@ -714,9 +722,25 @@ def localization(problem, agent) -> Generator:
     KB = []
 
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+
+    # Add to KB: where the walls are (walls_list) and aren't (not in walls_list)
+    for x, y in all_coords:
+        if (x, y) not in walls_list:
+            KB.append(~PropSymbolExpr(wall_str, x, y))
+        else:
+            KB.append(PropSymbolExpr(wall_str, x, y))
 
     for t in range(agent.num_timesteps):
+        helper1(agent, KB, t, all_coords, non_outer_wall_coords, walls_grid)
+
+        # Find possible pacman locations with updated KB
+        possible_locations = list()
+        for wall in non_outer_wall_coords:
+            helper2(KB, t, *wall, possible_locations)
+
+        # Call agent.moveToNextState(action_t) on the current agent action at timestep t
+        agent.moveToNextState(agent.actions[t])
+
         "*** END YOUR CODE HERE ***"
         yield possible_locations
 
@@ -758,9 +782,25 @@ def mapping(problem, agent) -> Generator:
     KB.append(conjoin(outer_wall_sent))
 
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # TODO >>>>>>
+    # It willl be similar to this
+
+    for x, y in all_coords:
+        if (x, y) not in walls_list:
+            KB.append(~PropSymbolExpr(wall_str, x, y))
+        else:
+            KB.append(PropSymbolExpr(wall_str, x, y))
 
     for t in range(agent.num_timesteps):
+        helper1(agent, KB, t, all_coords, non_outer_wall_coords, walls_grid)
+
+        # Find possible pacman locations with updated KB
+        possible_locations = list()
+        for wall in non_outer_wall_coords:
+            helper2(KB, t, *wall, possible_locations)
+
+        # Call agent.moveToNextState(action_t) on the current agent action at timestep t
+        agent.moveToNextState(agent.actions[t])
         "*** END YOUR CODE HERE ***"
         yield known_map
 
