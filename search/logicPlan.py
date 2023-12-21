@@ -25,16 +25,8 @@ from typing import Any, Callable, Dict, Generator, List, Tuple
 import game
 import logic
 import util
-from logic import (
-    Expr,
-    PropSymbolExpr,
-    conjoin,
-    disjoin,
-    parseExpr,
-    pl_true,
-    pycoSAT,
-    to_cnf,
-)
+from logic import (Expr, PropSymbolExpr, conjoin, disjoin, parseExpr, pl_true,
+                   pycoSAT, to_cnf)
 
 pacman_str = "P"
 food_str = "FOOD"
@@ -521,29 +513,13 @@ def positionLogicPlan(problem) -> List:
     KB = []
 
     "*** BEGIN YOUR CODE HERE ***"
-    # Pseudocode:
-    #     You will need to code up the following sentences for your knowledge base, in the following pseudocode form:
-    #
-    #     Add to KB: Initial knowledge: Pacman's initial location at timestep 0
-    #     for t in range(50) [Autograder will not test on layouts requiring ≥  50 timesteps]
-    #
-    #     Print time step; this is to see that the code is running and how far it is.
-    #     Add to KB: Initial knowledge: Pacman can only be at exactlyOne of the locations in non_wall_coords at timestep t.
-    #     This is similar to pacphysicsAxioms, but don't use that method since we are using non_wall_coors when generating the
-    #     list of possible locations in the first place (and walls_grid later).
-
-    #     Is there a satisfying assignment for the variables given the knowledge base so far? Use findModel and pass in the Goal Assertion and KB.
-    #         If there is, return a sequence of actions from start to goal using extractActionSequence.
-    #         Here, Goal Assertion is the expression asserting that Pacman is at the goal at timestep t.
-
-    #     Add to KB: Pacman takes exactly one action per timestep.
-    #     Add to KB: Transition Model sentences: call pacmanSuccessorAxiomSingle(...) for all possible pacman positions in non_wall_coords.
-
+    # Add to KB: Initial knowledge: Pacman's initial location at timestep 0
     KB.append(PropSymbolExpr(pacman_str, x0, y0, time=0))
 
     for t in range(50):
         print(f"Timestep: {t:_^10}")
 
+        # Add to KB: Initial knowledge: Pacman can only be at exactlyOne of the locations in non_wall_coords at timestep t.
         KB.append(
             exactlyOne(
                 [PropSymbolExpr(pacman_str, x, y, time=t) for x, y in non_wall_coords]
@@ -552,23 +528,21 @@ def positionLogicPlan(problem) -> List:
 
         # Assertion that Pacman is at the goal state at time-step t
         goal_assertion = PropSymbolExpr(pacman_str, xg, yg, time=t)
-        # if model := findModel(conjoin(goal_assertion, *KB)):
-        model = findModel(goal_assertion & conjoin(KB))
-        if model:
-            print(model)
-            return extractActionSequence(
-                model, actions
-            )  # there is, return a sequence of actions from start to goal using extractActionSequence
 
-        # print(result)
+        # Assign and check if model is not None
+        if model := findModel(conjoin(goal_assertion, *KB)):
+            return extractActionSequence(model, actions)
 
         # Pacman takes exactly one action at timestep t.
         KB.append(exactlyOne([PropSymbolExpr(action, time=t) for action in actions]))
 
         # Add to KB: Transition Model sentences: call pacmanSuccessorAxiomSingle(...) for all possible pacman positions in non_wall_coords.
-        KB.append(
+        # for x, y in non_wall_coords:
+        # Extend since we want to add more then 1 element together
+
+        KB.extend(
             [
-                pacmanSuccessorAxiomSingle(x, y, time=(t + 1), walls_grid=walls_grid)
+                pacmanSuccessorAxiomSingle(x, y, time=t + 1, walls_grid=walls_grid)
                 for x, y in non_wall_coords
             ]
         )
@@ -605,7 +579,51 @@ def foodLogicPlan(problem) -> List:
     KB = []
 
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # Add to KB: Initial knowledge: Pacman's initial location at timestep 0
+    KB.append(PropSymbolExpr(pacman_str, x0, y0, time=0))
+
+    KB.extend([PropSymbolExpr(food_str, x, y, time=0) for x, y in food])
+
+    for t in range(50):
+        print(f"Timestep: {t:_^10}")
+
+        # Add to KB: Initial knowledge: Pacman can only be at exactlyOne of the locations in non_wall_coords at timestep t.
+        KB.append(
+            exactlyOne(
+                [PropSymbolExpr(pacman_str, x, y, time=t) for x, y in non_wall_coords]
+            )
+        )
+        # there is no food at any position
+        # I think I can simply check if it is empty
+        goal_assertion = [~PropSymbolExpr(food_str, x, y, time=t) for x, y in food]
+
+        # Assign and check if model is not None
+        if model := findModel(conjoin(goal_assertion + KB)):
+            return extractActionSequence(model, actions)
+
+        # Pacman takes exactly one action at timestep t.
+        KB.append(exactlyOne([PropSymbolExpr(action, time=t) for action in actions]))
+
+        # Add to KB: Transition Model sentences: call pacmanSuccessorAxiomSingle(...) for all possible pacman positions in non_wall_coords.
+        # for x, y in non_wall_curds:
+        # Extend since we want to add more then 1 element together
+        KB.extend(
+            [pacmanSuccessorAxiomSingle(x, y, t + 1, walls) for x, y in non_wall_coords]
+        )
+
+        # Transition model for food
+        for x, y in food:
+            pacman_location = PropSymbolExpr(pacman_str, x, y, time=t)
+            food_location = PropSymbolExpr(food_str, x, y, time=t)
+            food_next_timestep = PropSymbolExpr(food_str, x, y, time=t + 1)
+
+            # if pacman is not over a food then the food remains
+            KB.append(conjoin(~pacman_location, food_location) >> food_next_timestep)
+            # If pacman is over a food location at the next step the food is not there
+            KB.append(conjoin(pacman_location, food_location) >> ~food_next_timestep)
+
+    # No solution exist
+    return None
     "*** END YOUR CODE HERE ***"
 
 
