@@ -25,8 +25,16 @@ from typing import Any, Callable, Dict, Generator, List, Tuple
 import game
 import logic
 import util
-from logic import (Expr, PropSymbolExpr, conjoin, disjoin, parseExpr, pl_true,
-                   pycoSAT, to_cnf)
+from logic import (
+    Expr,
+    PropSymbolExpr,
+    conjoin,
+    disjoin,
+    parseExpr,
+    pl_true,
+    pycoSAT,
+    to_cnf,
+)
 
 pacman_str = "P"
 food_str = "FOOD"
@@ -477,9 +485,9 @@ def checkLocationSatisfiability(
         )
 
     # add starting position and the actions int the knowedlge base
-    KB.append(logic.PropSymbolExpr(pacman_str, x0, y0, time=0))
-    KB.append(logic.PropSymbolExpr(action0, time=0))
-    KB.append(logic.PropSymbolExpr(action1, time=1))
+    KB.append(PropSymbolExpr(pacman_str, x0, y0, time=0))
+    KB.append(PropSymbolExpr(action0, time=0))
+    KB.append(PropSymbolExpr(action1, time=1))
 
     # a model where Pacman is, and is not, at (x1, y1) at time t = 1
     return (
@@ -531,7 +539,42 @@ def positionLogicPlan(problem) -> List:
     #     Add to KB: Pacman takes exactly one action per timestep.
     #     Add to KB: Transition Model sentences: call pacmanSuccessorAxiomSingle(...) for all possible pacman positions in non_wall_coords.
 
-    util.raiseNotDefined()
+    KB.append(PropSymbolExpr(pacman_str, x0, y0, time=0))
+
+    for t in range(50):
+        print(f"Timestep: {t:_^10}")
+
+        KB.append(
+            exactlyOne(
+                [PropSymbolExpr(pacman_str, x, y, time=t) for x, y in non_wall_coords]
+            )
+        )
+
+        # Assertion that Pacman is at the goal state at time-step t
+        goal_assertion = PropSymbolExpr(pacman_str, xg, yg, time=t)
+        # if model := findModel(conjoin(goal_assertion, *KB)):
+        model = findModel(goal_assertion & conjoin(KB))
+        if model:
+            print(model)
+            return extractActionSequence(
+                model, actions
+            )  # there is, return a sequence of actions from start to goal using extractActionSequence
+
+        # print(result)
+
+        # Pacman takes exactly one action at timestep t.
+        KB.append(exactlyOne([PropSymbolExpr(action, time=t) for action in actions]))
+
+        # Add to KB: Transition Model sentences: call pacmanSuccessorAxiomSingle(...) for all possible pacman positions in non_wall_coords.
+        KB.append(
+            [
+                pacmanSuccessorAxiomSingle(x, y, time=(t + 1), walls_grid=walls_grid)
+                for x, y in non_wall_coords
+            ]
+        )
+
+    # No solution exist
+    return None
     "*** END YOUR CODE HERE ***"
 
 
