@@ -628,6 +628,70 @@ def foodLogicPlan(problem) -> List:
 
 
 # ______________________________________________________________________________
+# Helper Functions
+
+
+def helper1(agent, KB, t, all_coords, non_outer_wall_coords, map):
+    """
+    Add pacphysics, action, and percept information to KB
+    """
+
+    KB.append(
+        pacphysicsAxioms(
+            t,
+            all_coords,
+            non_outer_wall_coords,
+            map,
+            sensorAxioms,
+            allLegalSuccessorAxioms,
+        )
+    )
+
+    KB.append(PropSymbolExpr(agent.actions[t], time=t))
+
+    KB.append(fourBitPerceptRules(t, agent.getPercept()))
+
+
+def helper2(KB, t, coord, possible_location):
+    """
+    Find possible pacman locations with updated KB
+    """
+
+    # Conjunction of the knowledge base and Pacman locations
+    result = conjoin(*KB, PropSymbolExpr(pacman_str, coord[0], coord[1], time=t))
+
+    # If there is a satisfying
+    if findModel(result):
+        possible_location.append(*coord)
+
+    # Think about it
+
+
+def helper2(KB, t, non_outer_wall_coords):
+    """
+    Find possible pacman locations with updated KB
+    """
+
+    for x, y in non_outer_wall_coords:
+        # use entail to see if a wall is not there
+        # = position
+
+        # Add to KB and update known_map: (x, y) locations where there is provably a wall.
+        KB.append(~position)
+
+        # Add to KB and update known_map: (x, y) locations where there is provably not a wall.
+
+    # Conjunction of the knowledge base and Pacman locations
+    result = conjoin(*KB, PropSymbolExpr(pacman_str, coord[0], coord[1], time=t))
+
+    # If there is a satisfying
+    if findModel(result):
+        possible_location.append(*coord)
+
+    # Think about it
+
+
+# ______________________________________________________________________________
 # QUESTION 6
 
 
