@@ -25,16 +25,8 @@ from typing import Any, Callable, Dict, Generator, List, Tuple
 import game
 import logic
 import util
-from logic import (
-    Expr,
-    PropSymbolExpr,
-    conjoin,
-    disjoin,
-    parseExpr,
-    pl_true,
-    pycoSAT,
-    to_cnf,
-)
+from logic import (Expr, PropSymbolExpr, conjoin, disjoin, parseExpr, pl_true,
+                   pycoSAT, to_cnf)
 
 pacman_str = "P"
 food_str = "FOOD"
@@ -847,9 +839,38 @@ def slam(problem, agent) -> Generator:
     KB.append(conjoin(outer_wall_sent))
 
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # Get initial location (pac_x_0, pac_y_0) of Pacman, and add this to KB
+    KB.append(PropSymbolExpr(pacman_str, pac_x_0, pac_y_0, time=0))
+
+    # Update known_map accordingly
+    known_map[pac_x_0][pac_y_0] = 0
+
+    KB.append(~PropSymbolExpr(wall_str, pac_x_0, pac_y_0))
 
     for t in range(agent.num_timesteps):
+        KB.append(
+            pacphysicsAxioms(
+                t,
+                all_coords,
+                non_outer_wall_coords,
+                known_map,
+                SLAMSensorAxioms,
+                SLAMSuccessorAxioms,
+            )
+        )
+
+        KB.append(PropSymbolExpr(agent.actions[t], time=t))
+        KB.append(numAdjWallsPerceptRules(t, agent.getPercepts()))
+
+        possible_locations = list()
+
+        for wall in non_outer_wall_coords:
+            helper3(KB, *wall, known_map)
+            helper2(KB, t, *wall, possible_locations)
+
+        # Call agent.moveToNextState(action_t) on the current agent action at timestep t
+        agent.moveToNextState(agent.actions[t])
+
         "*** END YOUR CODE HERE ***"
         yield (known_map, possible_locations)
 
