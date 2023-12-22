@@ -631,32 +631,46 @@ def foodLogicPlan(problem) -> List:
 # Helper Functions
 
 
-def helper1(agent, KB, t, all_coords, non_outer_wall_coords, map):
+def helper1(agent, KB, t, all_coords, non_outer_wall_coords, map, SLAM):
     """
     Add pacphysics, action, and percept information to KB
     """
 
-    # Add to KB: pacphysics_axioms. Use sensorAxioms and allLegalSuccessorAxioms for localization and mapping,
-    # and SLAMSensorAxioms and SLAMSuccessorAxioms for SLAM only
-    KB.append(
-        pacphysicsAxioms(
-            t,
-            all_coords,
-            non_outer_wall_coords,
-            map,
-            sensorAxioms,
-            allLegalSuccessorAxioms,
+    if SLAM:
+        KB.append(
+            pacphysicsAxioms(
+                t,
+                all_coords,
+                non_outer_wall_coords,
+                map,
+                SLAMSensorAxioms,
+                SLAMSuccessorAxioms,
+            )
         )
-    )
 
-    # Add to KB: Pacman takes action prescribed by agent.actions[t]
-    KB.append(PropSymbolExpr(agent.actions[t], time=t))
+        KB.append(PropSymbolExpr(agent.actions[t], time=t))
 
-    # if SLAM:
-    # KB.append(numAdjWallsPerceptRules(t, agent.getPercept()))
-    # else:
-    # Get the percepts by calling agent.getPercepts() and pass the percepts to fourBitPerceptRules(...) for localization and mapping, or numAdjWallsPerceptRules(...) for SLAM.
-    KB.append(fourBitPerceptRules(t, agent.getPercepts()))
+        # or numAdjWallsPerceptRules(...) for SLAM.
+        KB.append(numAdjWallsPerceptRules(t, agent.getPercepts()))
+    else:
+        # Add to KB: pacphysics_axioms. Use sensorAxioms and allLegalSuccessorAxioms for localization and mapping,
+        # and SLAMSensorAxioms and SLAMSuccessorAxioms for SLAM only
+        KB.append(
+            pacphysicsAxioms(
+                t,
+                all_coords,
+                non_outer_wall_coords,
+                map,
+                sensorAxioms,
+                allLegalSuccessorAxioms,
+            )
+        )
+
+        # Add to KB: Pacman takes action prescribed by agent.actions[t]
+        KB.append(PropSymbolExpr(agent.actions[t], time=t))
+
+        # Get the percepts by calling agent.getPercepts() and pass the percepts to fourBitPerceptRules(...) for localization and mapping,
+        KB.append(fourBitPerceptRules(t, agent.getPercepts()))
 
 
 def helper2(KB, t, x, y, possible_location):
@@ -731,7 +745,7 @@ def localization(problem, agent) -> Generator:
             KB.append(PropSymbolExpr(wall_str, x, y))
 
     for t in range(agent.num_timesteps):
-        helper1(agent, KB, t, all_coords, non_outer_wall_coords, walls_grid)
+        helper1(agent, KB, t, all_coords, non_outer_wall_coords, walls_grid, SLAM=False)
 
         # Find possible pacman locations with updated KB
         possible_locations = list()
@@ -789,7 +803,7 @@ def mapping(problem, agent) -> Generator:
     KB.append(~PropSymbolExpr(wall_str, pac_x_0, pac_y_0))
 
     for t in range(agent.num_timesteps):
-        helper1(agent, KB, t, all_coords, non_outer_wall_coords, known_map)
+        helper1(agent, KB, t, all_coords, non_outer_wall_coords, known_map, SLAM=False)
 
         # Find provable wall locations with updated KB
         for wall in non_outer_wall_coords:
@@ -848,20 +862,7 @@ def slam(problem, agent) -> Generator:
     KB.append(~PropSymbolExpr(wall_str, pac_x_0, pac_y_0))
 
     for t in range(agent.num_timesteps):
-        KB.append(
-            pacphysicsAxioms(
-                t,
-                all_coords,
-                non_outer_wall_coords,
-                known_map,
-                SLAMSensorAxioms,
-                SLAMSuccessorAxioms,
-            )
-        )
-
-        KB.append(PropSymbolExpr(agent.actions[t], time=t))
-        KB.append(numAdjWallsPerceptRules(t, agent.getPercepts()))
-
+        helper1(agent, KB, t, all_coords, non_outer_wall_coords, known_map, SLAM=True)
         possible_locations = list()
 
         for wall in non_outer_wall_coords:
