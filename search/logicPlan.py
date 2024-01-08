@@ -195,13 +195,10 @@ def atMostOne(literals: List[Expr]) -> Expr:
     "*** BEGIN YOUR CODE HERE ***"
     # Combination of two
     result = conjoin(
-        list(
-            # TODO fix this
-            # why doesn't it work I do not now
-            # conjoin(~(first & second), (first | second))
-            ~first | ~second
-            for first, second in itertools.combinations(literals, 2)
-        )
+        # TODO fix this
+        # why doesn't it work I do not now
+        # conjoin(~(first & second), (first | second))
+        [(~first | ~second) for first, second in itertools.combinations(literals, 2)]
     )
     return result
     "*** END YOUR CODE HERE ***"
