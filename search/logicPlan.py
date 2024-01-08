@@ -46,23 +46,6 @@ DIR_TO_DXDY_MAP = {"North": (0, 1), "South": (0, -1), "East": (1, 0), "West": (-
 # QUESTION 1
 
 
-#
-# def sentence1() -> Expr:
-#     """Returns a Expr instance that encodes that the following expressions are all true.
-#
-#     A or B
-#     (not A) if and only if ((not B) or C)
-#     (not A) or (not B) or C
-#     """
-#     "*** BEGIN YOUR CODE HERE ***"
-#     A = Expr("A")
-#     B = Expr("B")
-#     C = Expr("C")
-#
-#     return conjoin([(A | B), (~A % (~B | C)), disjoin([~A, ~B, C])])
-#     "*** END YOUR CODE HERE ***"
-
-
 def sentence1() -> Expr:
     """Returns a Expr instance that encodes that the following expressions are all true.
 
